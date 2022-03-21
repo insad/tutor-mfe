@@ -1,8 +1,9 @@
 variables:
     TUTOR_PLUGIN: mfe
-    TUTOR_IMAGES: mfe
+    TUTOR_BUILD_IMAGES: mfe
     TUTOR_PYPI_PACKAGE: tutor-mfe
-    OPENEDX_RELEASE: koa
+    OPENEDX_RELEASE: maple
+    GITHUB_REPO: overhangio/tutor-mfe
 
 include:
   - project: 'community/tutor-ci'

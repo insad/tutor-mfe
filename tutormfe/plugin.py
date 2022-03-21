@@ -13,6 +13,7 @@ config = {
         "DOCKER_IMAGE": "{{ DOCKER_REGISTRY }}overhangio/openedx-mfe:{{ MFE_VERSION }}",
         "HOST": "apps.{{ LMS_HOST }}",
         "COMMON_VERSION": "{{ OPENEDX_COMMON_VERSION }}",
+        "CADDY_DOCKER_IMAGE": "{{ DOCKER_IMAGE_CADDY }}",
         "ACCOUNT_MFE_APP": {
             "name": "account",
             "repository": "https://github.com/edx/frontend-app-account",
@@ -29,6 +30,11 @@ config = {
             "repository": "https://github.com/edx/frontend-app-gradebook",
             "port": 1994,
         },
+        "LEARNING_MFE_APP": {
+            "name": "learning",
+            "repository": "https://github.com/edx/frontend-app-learning",
+            "port": 2000,
+        },
         "PROFILE_MFE_APP": {
             "name": "profile",
             "repository": "https://github.com/edx/frontend-app-profile",
@@ -39,6 +45,9 @@ config = {
 
 hooks = {
     "build-image": {
+        "mfe": "{{ MFE_DOCKER_IMAGE }}",
+    },
+    "remote-image": {
         "mfe": "{{ MFE_DOCKER_IMAGE }}",
     },
     "init": ["lms"],

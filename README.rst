@@ -7,6 +7,7 @@ In addition, this plugin comes with a few MFEs which are enabled by default:
 
 - `Account <https://github.com/edx/frontend-app-account/>`__
 - `Gradebook <https://github.com/edx/frontend-app-gradebook/>`__
+- `Learning <https://github.com/edx/frontend-app-learning/>`__
 - `Profile <https://github.com/edx/frontend-app-profile/>`__
 
 Instructions for using each of these MFEs are given below.
@@ -41,6 +42,14 @@ Gradebook
     :alt: Gradebook MFE screenshot
 
 This instructor-only MFE is for viewing individual and aggregated grade results for a course. To access this MFE, go to a course 🡒 🡒 Instructor tab 🡒 Student Admin 🡒 View gradebook. The URL should be: ``http(s)://{{ MFE_HOST }}/gradebook/{{ course ID }}``. When running locally, the gradebook of the demo course is available at: http://apps.local.overhang.io/gradebook/course-v1:edX+DemoX+Demo_Course
+
+Learning
+~~~~~~~~
+
+.. image:: https://raw.githubusercontent.com/overhangio/tutor-mfe/master/screenshots/learning.png
+    :alt: Learning MFE screenshot
+
+The Learning MFE replaces the former courseware, which is the core part of the LMS where students follow courses.
 
 Profile
 ~~~~~~~~~
@@ -87,6 +96,84 @@ To disable an existing MFE, set its corresponding configuration setting to "null
     tutor config save --set MFE_GRADEBOOK_MFE_APP=null
     tutor config save --set MFE_PROFILE_MFE_APP=null
 
+Adding custom translations to your MFEs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This plugin makes it possible to change existing and add new translation strings to MFEs. Here is how to do it:
+
+1. Identify the ID of the string you would like to translate. For instance, the ID of the "Account Information" string in the account MFE is "account.settings.section.account.information" (see `source <https://github.com/edx/frontend-app-account/blob/1444831833cad4746b9ed14618a499b425ccc907/src/account-settings/AccountSettingsPage.messages.jsx#L34>`__).
+2. Create a folder and i18n file corresponding to your MFE app and language in the Tutor root. This location of this file should be ``/path/to/tutor/env/plugins/mfe/build/mfe/i18n/<app name>/<language code>.json``. For instance, to add French ("fr") translation strings to the account MFE, run::
+
+    cd "$(tutor config printroot)/env/plugins/mfe/build/mfe/i18n/"
+    mkdir account
+    touch account/fr.json
+
+3. Add your entries to this file in JSON format, where the key is the string ID and the value is the actual string. For instance::
+
+    {
+      "account.settings.section.account.information": "Information du compte POUAC"
+    }
+
+4. Rebuild the MFE image and restart the MFE with::
+
+    tutor images build mfe
+    tutor local start -d
+
+Your custom translation strings should now appear in your app.
+
+Customising MFEs
+~~~~~~~~~~~~~~~~
+
+To change the MFEs logos from the default to your own logos, override the corresponding settings in the MFEs environment using patches `mfe-env-production` and `mfe-env-development`. For example, using the following plugin:
+::
+
+    name: mfe_branding_plugin
+    version: 0.1.0
+    patches:
+      mfe-env-development: |
+        LOGO_URL=<URL>/logo.svg
+        LOGO_TRADEMARK_URL=<URL>/logo-trademark.svg
+        LOGO_WHITE_URL=<URL>/logo-white.svg
+        FAVICON_URL=<URL>/favicon.ico
+      mfe-env-production: |
+        LOGO_URL=<URL>/logo.svg
+        LOGO_TRADEMARK_URL=<URL>/logo-trademark.svg
+        LOGO_WHITE_URL=<URL>/logo-white.svg
+        FAVICON_URL=<URL>/favicon.ico
+
+To install custom components for the MFEs, such as the `header <https://github.com/openedx/frontend-component-header>`_ and `footer <https://github.com/openedx/frontend-component-footer>`_, override the components by adding a patch to ``mfe-dockerfile-post-npm-install`` in your plugin:
+::
+
+    patches:
+        ...
+        mfe-dockerfile-post-npm-install: |
+            # npm package
+            RUN npm install '@edx/frontend-component-header@npm:@edx/frontend-component-header-edx@latest'
+            # git repository
+            RUN npm install '@edx/frontend-component-footer@git+https://github.com/edx/frontend-component-header-edx.git'
+
+The same applies to installing a custom `brand <https://github.com/openedx/brand-openedx>`_ package:
+::
+
+    patches:
+        ...
+        mfe-dockerfile-post-npm-install: |
+            RUN npm install '@edx/brand@git+https://github.com/edx/brand-edx.org.git'
+
+
+Installing from a private npm registry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case you need to install components from a private NPM registry, you can append the ``--registry`` option to your install statement or add a ``npm config set`` command to the plugin.
+In some cases, for example when using `GitLab's NPM package registry <https://docs.gitlab.com/ee/user/packages/npm_registry/>`_, you might also need to provide a token for your registry, which can be done with an additional ``npm config set`` command as well:
+::
+
+    patches:
+        ...
+        mfe-dockerfile-post-npm-install: |
+            RUN npm config set @foo:registry https://gitlab.example.com/api/v4/projects/<your_project_id>/packages/npm/
+            RUN npm config set '//gitlab.example.com/api/v4/projects/<your_project_id>/packages/npm/:_authToken' '<your_token>'
+            RUN npm install '@edx/frontend-component-header@npm:@foo/<your_frontend_component_header_name>@latest'
 
 Running MFEs on Kubernetes
 --------------------------
@@ -99,6 +186,42 @@ The MFE plugin works a bit differently than other Tutor plugins. MFEs are static
     tutor k8s start
 
 We consider that this situation is less than ideal. An improvement would be to self-host a Docker registry and an image-building pipeline on Kubernetes. If you are interested in such a solution, please let your voice be heard on the `Tutor community forums <https://discuss.overhang.io>`__.
+
+MFE development
+---------------
+
+Tutor makes it possible to run any MFE in development mode. For instance, to run the "profile" MFE::
+
+    tutor dev runserver profile
+
+Then, access http://apps.local.overhang.io:1995/profile/u/YOURUSERNAME
+
+To run your own fork of an MFE, start by copying the MFE repo on the host::
+
+    tutor dev bindmount profile /openedx/app
+
+Then, run a development server that bind-mounts the repo::
+
+    tutor dev runserver --volume=/openedx/app profile
+
+The changes you make to ``$(tutor config printroot)/volumes/app/`` will be automatically picked up and hot-reloaded by your development server.
+
+Uninstall
+---------
+
+To disable this plugin run::
+
+    tutor plugins disable mfe
+
+You will also have to manually remove a few waffle flags::
+
+    tutor local run lms ./manage.py lms waffle_delete --flags account.redirect_to_microfrontend
+    tutor local run lms ./manage.py lms waffle_delete --flags learner_profile.redirect_to_microfrontend
+    tutor local run lms site-configuration unset ENABLE_PROFILE_MICROFRONTEND
+
+Finally, restart the platform with::
+
+    tutor local quickstart
 
 License
 -------

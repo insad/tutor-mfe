@@ -33,10 +33,11 @@ setup(
     author="Overhang.IO",
     description="mfe plugin for Tutor",
     long_description=load_readme(),
+    long_description_content_type="text/x-rst",
     packages=find_packages(exclude=["tests*"]),
     include_package_data=True,
     python_requires=">=3.5",
-    install_requires=["tutor-openedx>=12.0.0,<13.0.0"],
+    install_requires=["tutor>=13.0.0,<14.0.0"],
     entry_points={"tutor.plugin.v0": ["mfe = tutormfe.plugin"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
